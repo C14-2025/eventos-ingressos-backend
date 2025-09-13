@@ -5,16 +5,14 @@ import { ICacheDTO } from '@dtos/ICacheDTO';
 import { IListDTO } from '@dtos/IListDTO';
 import { IConnection } from '@shared/typeorm';
 import { FindOptionsWhere } from 'typeorm';
-import { Get, Route, Tags, Query, Inject } from 'tsoa';
-import { ISharesRepository } from '@modules/finances/repositories/ISharesRepository';
-import { Share } from '@modules/finances/entities/Share';
+import { Event } from '@modules/events/entities/Event';
+import { IEventsRepository } from '@modules/events/repositories/IEventsRepository';
 
-@Route('/users')
 @injectable()
-export class ListShareService {
+export class ListEventService {
   public constructor(
-    @inject('SharesRepository')
-    private readonly sharesRepository: ISharesRepository,
+    @inject('EventsRepository')
+    private readonly eventsRepository: IEventsRepository,
 
     @inject('CacheProvider')
     private readonly cacheProvider: ICacheProvider,
@@ -23,27 +21,24 @@ export class ListShareService {
     private readonly connection: IConnection,
   ) {}
 
-  @Get()
-  @Tags('User')
   public async execute(
-    @Query() page: number,
-    @Query() limit: number,
-    @Inject() filters: FindOptionsWhere<Share>,
-    @Inject() user_id: string,
-  ): Promise<IListDTO<Share>> {
+    page: number,
+    limit: number,
+    filters: FindOptionsWhere<Event>,
+  ): Promise<IListDTO<Event>> {
     const trx = this.connection.mysql.createQueryRunner();
 
     await trx.startTransaction();
     try {
       const cacheKey = `${
         this.connection.client
-      }:shares:${user_id}:${page}:${limit}:${JSON.stringify(filters)}`;
+      }:events:${page}:${limit}:${JSON.stringify(filters)}`;
 
-      let cache = await this.cacheProvider.recovery<ICacheDTO<Share>>(cacheKey);
+      let cache = await this.cacheProvider.recovery<ICacheDTO<Event>>(cacheKey);
 
       if (!cache) {
-        const { list, amount } = await this.sharesRepository.findAll(
-          { where: { ...filters, user_id }, page, limit },
+        const { list, amount } = await this.eventsRepository.findAll(
+          { where: filters, page, limit, relations: {tickets: true} },
           trx,
         );
         cache = { data: instanceToInstance(list), total: amount };
@@ -55,7 +50,7 @@ export class ListShareService {
       return {
         code: 200,
         message_code: 'LISTED',
-        message: 'Successfully listed shares',
+        message: 'Successfully listed events',
         pagination: {
           total: cache.total,
           page,

@@ -1,19 +1,18 @@
 import { injectable, inject } from 'tsyringe';
 import { ICacheProvider } from '@shared/container/providers/CacheProvider/models/ICacheProvider';
-import { IWalletsRepository } from '@modules/finances/repositories/IWalletsRepository';
-import { IWalletDTO } from '@modules/finances/dtos/IWalletDTO';
-import { Wallet } from '@modules/finances/entities/Wallet';
+import { Event } from '@modules/events/entities/Event';
 import { instanceToInstance } from 'class-transformer';
 import { IResponseDTO } from '@dtos/IResponseDTO';
 import { IConnection } from '@shared/typeorm';
-import { Route, Tags, Post, Body } from 'tsoa';
+import { IEventsRepository } from '@modules/events/repositories/IEventsRepository';
+import { IEventDTO } from '@modules/events/dtos/IEventDTO';
+import { AppError } from '@shared/errors/AppError';
 
-@Route('/finances')
 @injectable()
-export class CreateWalletService {
+export class CreateEventService {
   public constructor(
-    @inject('WalletsRepository')
-    private readonly walletsRepository: IWalletsRepository,
+    @inject('EventsRepository')
+    private readonly eventsRepository: IEventsRepository,
 
     @inject('CacheProvider')
     private readonly cacheProvider: ICacheProvider,
@@ -22,27 +21,36 @@ export class CreateWalletService {
     private readonly connection: IConnection,
   ) {}
 
-  @Post()
-  @Tags('Wallet')
+
   public async execute(
-    @Body() financeData: IWalletDTO,
-  ): Promise<IResponseDTO<Wallet>> {
+     eventData: IEventDTO,
+  ): Promise<IResponseDTO<Event>> {
     const trx = this.connection.mysql.createQueryRunner();
 
     await trx.startTransaction();
     try {
-      const finance = await this.walletsRepository.create(financeData, trx);
+      const eventWithSameDate = await this.eventsRepository.findBy({where: {date: eventData.date}}, trx)
+
+      if (eventWithSameDate) {
+        const isSameTime = eventWithSameDate.time === eventData.time
+
+        if (isSameTime) {
+          throw new AppError('BAD_REQUEST', 'Cannot create event, there is a event at the same time', 400)
+        }
+      }
+
+      const event = await this.eventsRepository.create(eventData, trx);
 
       await this.cacheProvider.invalidatePrefix(
-        `${this.connection.client}:finances`,
+        `${this.connection.client}:events`,
       );
       if (trx.isTransactionActive) await trx.commitTransaction();
 
       return {
         code: 201,
         message_code: 'CREATED',
-        message: 'Wallet successfully created',
-        data: instanceToInstance(finance),
+        message: 'Event successfully created',
+        data: instanceToInstance(event),
       };
     } catch (error: unknown) {
       if (trx.isTransactionActive) await trx.rollbackTransaction();

@@ -1,6 +1,6 @@
 import { IBaseRepository } from '@shared/container/modules/repositories/IBaseRepository';
-import { Share } from '../entities/Share';
+import { Ticket } from '../entities/Ticket';
 
-export interface ISharesRepository extends IBaseRepository<Share> {
+export interface ITicketsRepository extends IBaseRepository<Ticket> {
   // non-generic methods here
 }
