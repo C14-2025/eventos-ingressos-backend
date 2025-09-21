@@ -166,4 +166,23 @@ describe('CreateEventService with mocks', () => {
     expect(response.data).toHaveProperty('id');
     expect(response.data).toHaveProperty('name', 'Property Test Event');
   });
+
+ 
+  it('should invalidate cache after creating a new event', async () => {
+    const eventData: IEventDTO = {
+      name: 'Invalidate Cache Event',
+      date: '2025-09-24',
+      time: '12:00',
+    };
+
+    const createdEvent = { id: '99', ...eventData };
+
+    mockEventsRepository.findByDateAndTime.mockResolvedValue(null);
+    mockEventsRepository.create.mockResolvedValue(createdEvent);
+
+    const response = await createEventService.execute(eventData);
+
+    expect(response.code).toBe(201);
+    expect(mockCacheProvider.invalidate).toHaveBeenCalled();
+  });
 });
