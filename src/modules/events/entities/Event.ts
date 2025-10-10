@@ -23,7 +23,7 @@ export class Event extends Base {
   public capacity: number;
 
   @Column({ type: 'float', nullable: false, default: 0 })
-  public ticket_price: number;
+  public price: number;
 
   @OneToMany(() => Ticket, ticket => ticket.event)
   public tickets: Array<Ticket>
