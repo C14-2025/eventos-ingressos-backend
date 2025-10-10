@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Eventos Ingressos</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="login-container">
+    <h2>Login</h2>
+    <input type="email" id="email" placeholder="Email" />
+    <input type="password" id="password" placeholder="Senha" />
+    <button id="loginButton" onclick="login()">Entrar</button>
+    <div class="message" id="message"></div>
+  </div>
+
+  <script>
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const message = document.getElementById('message');
+      const button = document.getElementById('loginButton');
+
+      if (!email || !password) {
+        message.textContent = 'Preencha todos os campos!';
+        message.style.color = 'orange';
+        return;
+      }
+
+      // Mostra loading
+      button.disabled = true;
+      button.textContent = 'Entrando...';
+      message.textContent = '';
+
+      try {
+        const response = await fetch('http://localhost:3333/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          message.textContent = 'Login realizado com sucesso!';
+          message.style.color = 'lightgreen';
+          console.log('Token recebido:', data.token || data);
+        } else {
+          message.textContent = data.message || 'Erro no login!';
+          message.style.color = 'red';
+        }
+      } catch (error) {
+        message.textContent = 'Erro de conexão com o servidor.';
+        message.style.color = 'red';
+        console.error(error);
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Entrar';
+      }
+    }
+  </script>
+</body>
+</html>
