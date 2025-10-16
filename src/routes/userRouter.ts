@@ -7,7 +7,13 @@ import { DeleteUserController } from '@modules/users/services/deleteUser/DeleteU
 import { AuthenticateUserController } from '@modules/users/services/authenticateUser/AuthenticateUserController';
 import { ShowSelfUserController } from '@modules/users/services/showSelfUser/ShowSelfUserController';
 
+// (opcional, mas recomendado se /me precisar de autenticação)
+import { ensureAuthenticated } from '@middlewares/ensureAuthenticated';
+
+
 const userRouter = Router();
+
+// instâncias dos controllers
 const createUserController = new CreateUserController();
 const listUserController = new ListUserController();
 const showUserController = new ShowUserController();
@@ -16,7 +22,10 @@ const deleteUserController = new DeleteUserController();
 const showSelfUserController = new ShowSelfUserController();
 const authenticateUserController = new AuthenticateUserController();
 
+// rota de login
 userRouter.post('/login', authenticateUserController.handle);
+
+// rotas CRUD de usuários
 userRouter
   .route('/users')
   .post(createUserController.handle)
@@ -28,6 +37,7 @@ userRouter
   .put(updateUserController.handle)
   .delete(deleteUserController.handle);
 
-userRouter.route('/me').get(showSelfUserController.handle);
+// rota para exibir o próprio usuário logado (/me)
+userRouter.get('/me', ensureAuthenticated, showSelfUserController.handle);
 
 export { userRouter };
