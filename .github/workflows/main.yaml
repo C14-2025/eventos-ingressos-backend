@@ -62,6 +62,11 @@ jobs:
           echo "REDIS_PORT=6379" >> .env
           echo "API_URL=${{ secrets.API_URL }}" >> .env
 
+      - name: Verificar .env
+        run: |
+          echo "Conteúdo do .env:"
+          cat .env
+
       - name: Instalar dependências
         run: npm install
 
@@ -73,20 +78,21 @@ jobs:
           echo "Aguardando o MySQL responder na porta 3306..."
           for i in {1..20}; do
             if mysqladmin ping -h 127.0.0.1 --silent; then
-              echo "✅ MySQL disponível!"
+              echo "MySQL disponível!"
               exit 0
             fi
             echo "Tentativa $i: aguardando..."
             sleep 5
           done
-          echo "❌ MySQL não respondeu a tempo!"
+          echo "MySQL não respondeu a tempo!"
           exit 1
 
       - name: Iniciar API
         run: |
+          export MYSQL_HOST=database
           yarn dev &
           sleep 12
-          echo "✅ API pronta para testes."
+          echo "API pronta para testes."
 
       - name: Testar Login e JWT
         run: |
@@ -101,11 +107,11 @@ jobs:
           TOKEN=$(echo "$RESPONSE" | grep -o '"jwt_token":"[^"]*"' | cut -d'"' -f4)
 
           if [ -z "$TOKEN" ]; then
-            echo "❌ Falha no login — jwt_token não encontrado!"
+            echo "Falha no login — jwt_token não encontrado!"
             exit 1
           fi
 
-          echo "✅ Login bem-sucedido. Token extraído:"
+          echo "Login bem-sucedido. Token extraído:"
           echo "$TOKEN"
 
           echo "Testando endpoint /me..."
@@ -118,9 +124,9 @@ jobs:
           echo "$BODY"
 
           if [ "$STATUS" -eq 200 ]; then
-            echo "✅ Teste de autenticação /me bem-sucedido!"
+            echo "Teste de autenticação /me bem-sucedido!"
           else
-            echo "❌ Falha na autenticação (HTTP $STATUS)"
+            echo "Falha na autenticação (HTTP $STATUS)"
             exit 1
           fi
 
