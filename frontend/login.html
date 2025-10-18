@@ -9,26 +9,25 @@
 <body>
   <div class="login-container">
     <h2>Login</h2>
-    <input type="email" id="email" placeholder="Email" />
-    <input type="password" id="password" placeholder="Senha" />
+    <input type="email" id="email" placeholder="Email" autocomplete="email" />
+    <input type="password" id="password" placeholder="Senha" autocomplete="current-password" />
     <button id="loginButton" onclick="login()">Entrar</button>
     <div class="message" id="message"></div>
   </div>
 
   <script>
     async function login() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
       const message = document.getElementById('message');
       const button = document.getElementById('loginButton');
 
       if (!email || !password) {
-        message.textContent = 'Preencha todos os campos!';
+        message.textContent = '⚠️ Preencha todos os campos!';
         message.style.color = 'orange';
         return;
       }
 
-      // Mostra loading
       button.disabled = true;
       button.textContent = 'Entrando...';
       message.textContent = '';
@@ -43,17 +42,29 @@
         const data = await response.json();
 
         if (response.ok) {
-          message.textContent = 'Login realizado com sucesso!';
+          // Exibe mensagem de sucesso
+          message.textContent = '✅ Login realizado com sucesso!';
           message.style.color = 'lightgreen';
-          console.log('Token recebido:', data.token || data);
+          console.log('Resposta do servidor:', data);
+
+          // Armazena o token JWT se existir
+          if (data.token) {
+            localStorage.setItem('authToken', data.token);
+          }
+
+          // Redireciona pra página principal (ajuste o destino conforme o projeto)
+          setTimeout(() => {
+            window.location.href = '/index.html';
+          }, 1500);
         } else {
-          message.textContent = data.message || 'Erro no login!';
+          // Mostra mensagem de erro vinda do backend ou padrão
+          message.textContent = data.message || '❌ Email ou senha incorretos.';
           message.style.color = 'red';
         }
       } catch (error) {
-        message.textContent = 'Erro de conexão com o servidor.';
+        console.error('Erro ao conectar:', error);
+        message.textContent = '❌ Erro de conexão com o servidor.';
         message.style.color = 'red';
-        console.error(error);
       } finally {
         button.disabled = false;
         button.textContent = 'Entrar';

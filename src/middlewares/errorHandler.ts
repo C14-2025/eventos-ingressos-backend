@@ -18,8 +18,10 @@ export const errorHandler = (
   response: Response,
   next: NextFunction,
 ): void => {
-  const errorBody = {} as Parameters<typeof createErrorLog>[0];
+  console.error('[ERROR HANDLER CAUGHT]', error);
 
+  const errorBody = {} as Parameters<typeof createErrorLog>[0];
+  
   if (error instanceof CelebrateError) {
     Object.assign(errorBody, {
       code: 400,

@@ -1,3 +1,5 @@
+// src/shared/infra/http/routes/userRouter.ts
+
 import { Router } from 'express';
 import { CreateUserController } from '@modules/users/services/createUser/CreateUserController';
 import { ShowUserController } from '@modules/users/services/showUser/ShowUserController';
@@ -7,9 +9,8 @@ import { DeleteUserController } from '@modules/users/services/deleteUser/DeleteU
 import { AuthenticateUserController } from '@modules/users/services/authenticateUser/AuthenticateUserController';
 import { ShowSelfUserController } from '@modules/users/services/showSelfUser/ShowSelfUserController';
 
-// (opcional, mas recomendado se /me precisar de autenticação)
-import { ensureAuthenticated } from '@middlewares/ensureAuthenticated';
-
+// ✅ caminho corrigido do middleware
+import { ensureAuthenticated } from '@shared/infra/http/middlewares/ensureAuthenticated';
 
 const userRouter = Router();
 

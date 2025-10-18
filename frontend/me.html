@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meu Perfil - Eventos Ingressos</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .user-container {
+      background-color: #1a1a1a;
+      border-radius: 12px;
+      padding: 24px;
+      color: white;
+      max-width: 400px;
+      margin: 100px auto;
+      text-align: center;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+    h2 {
+      color: #00bfff;
+      margin-bottom: 15px;
+    }
+    button {
+      margin-top: 20px;
+      background-color: #00bfff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: white;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #0099cc;
+    }
+    #message {
+      margin-top: 20px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="user-container">
+    <h2>👤 Meu Perfil</h2>
+    <div id="userInfo">Carregando informações...</div>
+    <button onclick="logout()">Sair</button>
+    <div id="message"></div>
+  </div>
+
+  <script>
+    async function getUserData() {
+      const token = localStorage.getItem('authToken');
+      const userInfo = document.getElementById('userInfo');
+      const message = document.getElementById('message');
+
+      if (!token) {
+        userInfo.textContent = '⚠️ Você não está logado.';
+        message.innerHTML = '<a href="login.html" style="color:#00bfff;">Fazer login</a>';
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:3333/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          userInfo.innerHTML = `
+            <p><strong>Nome:</strong> ${data.data?.name || 'Não informado'}</p>
+            <p><strong>Email:</strong> ${data.data?.email || 'Não informado'}</p>
+            <p><strong>ID:</strong> ${data.data?.id || '---'}</p>
+          `;
+        } else {
+          userInfo.textContent = '❌ Não foi possível carregar seus dados.';
+          message.innerHTML = '<a href="login.html" style="color:#00bfff;">Fazer login novamente</a>';
+        }
+      } catch (error) {
+        console.error(error);
+        userInfo.textContent = '❌ Erro ao se conectar ao servidor.';
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('authToken');
+      document.getElementById('message').innerHTML =
+        '<span style="color:orange;">Você saiu da conta.</span>';
+      setTimeout(() => (window.location.href = 'login.html'), 1500);
+    }
+
+    getUserData();
+  </script>
+</body>
+</html>

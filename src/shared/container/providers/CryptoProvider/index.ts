@@ -1,15 +1,10 @@
-import { container } from 'tsyringe';
-
-import { cryptoConfig } from '@config/crypto';
+import { container, delay } from 'tsyringe';
 import { CryptoProvider } from './implementations/CryptoProvider';
 import { ICryptoProviderDTO } from './models/ICryptoProvider';
 
-const providers: Record<typeof cryptoConfig.driver, () => ICryptoProviderDTO> =
-  {
-    crypto: () => container.resolve(CryptoProvider),
-  };
+console.log('[Container] Registrando CryptoProvider...');
 
-container.registerInstance<ICryptoProviderDTO>(
+container.registerSingleton<ICryptoProviderDTO>(
   'CryptoProvider',
-  providers[cryptoConfig.driver](),
+  delay(() => CryptoProvider),
 );

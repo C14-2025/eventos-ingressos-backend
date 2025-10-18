@@ -14,24 +14,36 @@ import {
 } from 'node:fs';
 import { resolve } from 'node:path';
 import { sign, SignOptions } from 'jsonwebtoken';
-import { JWK, pem2jwk } from 'pem-jwk';
+// Tipos de 'pem-jwk' nem sempre existem; importa só a função:
+import { pem2jwk } from 'pem-jwk';
+
 import { cryptoConfig } from '@config/crypto';
 import { authConfig } from '@config/auth';
+
 import { ICryptoDTO } from '../dtos/ICryptoDTO';
 import { ICryptoProviderDTO } from '../models/ICryptoProvider';
 
+function getAesKeyFromEnv(): Buffer {
+  // aes-256-ctr precisa de chave de 32 bytes.
+  // Vamos montar a partir de CRYPTO_SECRET_KEY em hex;
+  // se vier curta, a gente faz pad à direita com zeros.
+  const hex = (cryptoConfig.config.secretKey || '').trim();
+  const paddedHex = (hex.padEnd(64, '0')).slice(0, 64); // 32 bytes = 64 hex chars
+  return Buffer.from(paddedHex, 'hex');
+}
+
 export class CryptoProvider implements ICryptoProviderDTO {
-  
   public encrypt(text: string): ICryptoDTO {
     const iv = randomBytes(16);
+    const key = getAesKeyFromEnv();
 
     const cipher = createCipheriv(
-      cryptoConfig.config.algorithm,
-      cryptoConfig.config.secretKey,
+      cryptoConfig.config.algorithm as any, // tipos do node às vezes implicam com string literal
+      key,
       iv,
     );
 
-    const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
+    const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
 
     return {
       iv: iv.toString(cryptoConfig.config.encoding),
@@ -40,18 +52,18 @@ export class CryptoProvider implements ICryptoProviderDTO {
   }
 
   public decrypt(data: ICryptoDTO): string {
+    const key = getAesKeyFromEnv();
+    const iv = Buffer.from(data.iv, cryptoConfig.config.encoding);
+    const content = Buffer.from(data.content, cryptoConfig.config.encoding);
+
     const decipher = createDecipheriv(
-      cryptoConfig.config.algorithm,
-      cryptoConfig.config.secretKey,
-      Buffer.from(data.iv, cryptoConfig.config.encoding),
+      cryptoConfig.config.algorithm as any,
+      key,
+      iv,
     );
 
-    const decrpyted = Buffer.concat([
-      decipher.update(Buffer.from(data.content, cryptoConfig.config.encoding)),
-      decipher.final(),
-    ]);
-
-    return decrpyted.toString();
+    const decrypted = Buffer.concat([decipher.update(content), decipher.final()]);
+    return decrypted.toString('utf8');
   }
 
   public generateRefreshToken(ip: string): string {
@@ -66,14 +78,13 @@ export class CryptoProvider implements ICryptoProviderDTO {
     jwt_token: string;
     refresh_token: string;
   } {
-    const secret = readFileSync(
-      resolve(cryptoConfig.config.keysPath, 'private.pem'),
-    );
+    const privateKeyPath = resolve(cryptoConfig.config.keysPath, 'private.pem');
+    const secret = readFileSync(privateKeyPath); // Buffer
 
     const jwtToken = sign(payload, secret, {
       expiresIn: authConfig.config.jwt.expiresIn,
-      ...options,
       algorithm: 'RS256',
+      ...options,
     });
 
     const refreshToken = this.generateRefreshToken(ip);
@@ -84,65 +95,36 @@ export class CryptoProvider implements ICryptoProviderDTO {
     };
   }
 
-  public generateKeys(): JWK<{ use: string }> {
+  public generateKeys(): any /* JWK */ {
     const { publicKey, privateKey } = generateKeyPairSync('rsa', {
       modulusLength: 3072,
     });
 
-    const publicExported = publicKey
-      .export({
-        format: 'pem',
-        type: 'pkcs1',
-      })
-      .toString();
+    const publicExported = publicKey.export({ format: 'pem', type: 'pkcs1' }).toString();
+    const privateExported = privateKey.export({ format: 'pem', type: 'pkcs1' }).toString();
 
-    const privateExported = privateKey
-      .export({
-        format: 'pem',
-        type: 'pkcs1',
-      })
-      .toString();
+    const parsedJwk = pem2jwk(publicExported, { use: 'sig' } as any);
+    const jwksJson = { keys: [parsedJwk] };
 
-    const parsedJwk = pem2jwk(publicExported, { use: 'sig' });
+    const keysDir = resolve(cryptoConfig.config.keysPath);
+    const wellKnownDir = resolve(cryptoConfig.config.assetsPath, '.well-known');
+    const privatePath = resolve(keysDir, 'private.pem');
+    const publicPath = resolve(keysDir, 'public.pem');
+    const jwksPath = cryptoConfig.config.jwksPath;
 
-    const jwksJson = {
-      keys: [parsedJwk],
-    };
+    // Garante diretórios
+    mkdirSync(keysDir, { recursive: true });
+    mkdirSync(wellKnownDir, { recursive: true });
 
-    if (!existsSync(resolve(cryptoConfig.config.keysPath))) {
-      mkdirSync(resolve(cryptoConfig.config.keysPath));
-    }
+    // Salva chaves
+    if (existsSync(privatePath)) truncateSync(privatePath);
+    appendFileSync(privatePath, privateExported);
 
-    if (!existsSync(resolve(cryptoConfig.config.assetsPath, '.well-known'))) {
-      mkdirSync(resolve(cryptoConfig.config.assetsPath, '.well-known'));
-    }
+    if (existsSync(publicPath)) truncateSync(publicPath);
+    appendFileSync(publicPath, publicExported);
 
-    if (existsSync(resolve(cryptoConfig.config.keysPath, 'private.pem'))) {
-      truncateSync(resolve(cryptoConfig.config.keysPath, 'private.pem'));
-    }
-
-    appendFileSync(
-      resolve(cryptoConfig.config.keysPath, 'private.pem'),
-      privateExported,
-    );
-
-    if (existsSync(resolve(cryptoConfig.config.keysPath, 'public.pem'))) {
-      truncateSync(resolve(cryptoConfig.config.keysPath, 'public.pem'));
-    }
-
-    appendFileSync(
-      resolve(cryptoConfig.config.keysPath, 'public.pem'),
-      publicExported,
-    );
-
-    if (existsSync(resolve(cryptoConfig.config.jwksPath))) {
-      truncateSync(resolve(cryptoConfig.config.jwksPath));
-    }
-
-    appendFileSync(
-      resolve(cryptoConfig.config.jwksPath),
-      JSON.stringify(jwksJson, null, 2),
-    );
+    if (existsSync(jwksPath)) truncateSync(jwksPath);
+    appendFileSync(jwksPath, JSON.stringify(jwksJson, null, 2));
 
     return parsedJwk;
   }

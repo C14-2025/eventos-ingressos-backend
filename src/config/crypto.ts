@@ -1,3 +1,4 @@
+// src/config/crypto.ts
 import { resolve } from 'node:path';
 
 interface ICryptoConfigDTO {
