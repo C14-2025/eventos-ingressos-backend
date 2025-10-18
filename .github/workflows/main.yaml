@@ -6,19 +6,14 @@ env:
   API_URL: ${{ secrets.API_URL }}
   EMAIL: ${{ secrets.EMAIL }}
   PASSWORD: ${{ secrets.PASSWORD }}
-  RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
   MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
-  MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-  REDIS_HOST: ${{ secrets.REDIS_HOST }}
-  MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-  MYSQL_PORT: ${{ secrets.MYSQL_PORT }}
+  MYSQL_USER: admin
+  MYSQL_PASSWORD: 12345
+  MYSQL_ROOT_PASSWORD: 12345
+  MYSQL_PORT: 3306
   MYSQL_HOST: database
-  MYSQL_USER: ${{ secrets.MYSQL_USER }}
-  NODE_ENV: ${{ secrets.NODE_ENV }}
-  PORT: ${{ secrets.PORT }}
-  REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-  REDIS_PORT: ${{ secrets.REDIS_PORT }}
-  REDIS_PREFIX: ${{ secrets.REDIS_PREFIX }}
+  NODE_ENV: test
+  PORT: 3333
 
 jobs:
   test:
@@ -38,17 +33,17 @@ jobs:
           --health-cmd="mysqladmin ping -h localhost"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=10
 
       redis:
-        image: bitnami/redis
+        image: redis:7
         ports:
           - 6379:6379
         options: >-
           --health-cmd="redis-cli ping"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=10
 
     steps:
       - name: Checkout do repositório
@@ -56,16 +51,15 @@ jobs:
 
       - name: Criar arquivo .env
         run: |
-          echo "PORT=${{ secrets.PORT }}" > .env
+          echo "PORT=3333" > .env
           echo "MYSQL_HOST=database" >> .env
           echo "MYSQL_USER=admin" >> .env
           echo "MYSQL_PASSWORD=12345" >> .env
           echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env
           echo "MYSQL_PORT=3306" >> .env
-          echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> .env
+          echo "NODE_ENV=test" >> .env
           echo "REDIS_HOST=redis" >> .env
           echo "REDIS_PORT=6379" >> .env
-          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
           echo "API_URL=${{ secrets.API_URL }}" >> .env
 
       - name: Instalar dependências
@@ -79,25 +73,25 @@ jobs:
           echo "Aguardando o MySQL responder na porta 3306..."
           for i in {1..20}; do
             if mysqladmin ping -h 127.0.0.1 --silent; then
-              echo "MySQL disponível!"
+              echo "✅ MySQL disponível!"
               exit 0
             fi
             echo "Tentativa $i: aguardando..."
             sleep 5
           done
-          echo "MySQL não respondeu a tempo!"
+          echo "❌ MySQL não respondeu a tempo!"
           exit 1
 
       - name: Iniciar API
         run: |
           yarn dev &
           sleep 12
-          echo "API pronta para testes."
+          echo "✅ API pronta para testes."
 
       - name: Testar Login e JWT
         run: |
           echo "Testando endpoint /login..."
-          RESPONSE=$(curl -s -X POST http://localhost:${{ secrets.PORT }}/login \
+          RESPONSE=$(curl -s -X POST http://localhost:3333/login \
             -H "Content-Type: application/json" \
             -d '{"email":"${{ secrets.EMAIL }}","password":"${{ secrets.PASSWORD }}"}')
 
@@ -107,15 +101,15 @@ jobs:
           TOKEN=$(echo "$RESPONSE" | grep -o '"jwt_token":"[^"]*"' | cut -d'"' -f4)
 
           if [ -z "$TOKEN" ]; then
-            echo "Falha no login — jwt_token não encontrado!"
+            echo "❌ Falha no login — jwt_token não encontrado!"
             exit 1
           fi
 
-          echo "Login bem-sucedido. Token extraído:"
+          echo "✅ Login bem-sucedido. Token extraído:"
           echo "$TOKEN"
 
           echo "Testando endpoint /me..."
-          ME_RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $TOKEN" http://localhost:${{ secrets.PORT }}/me)
+          ME_RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $TOKEN" http://localhost:3333/me)
           BODY=$(echo "$ME_RESPONSE" | head -n1)
           STATUS=$(echo "$ME_RESPONSE" | tail -n1)
 
@@ -124,9 +118,9 @@ jobs:
           echo "$BODY"
 
           if [ "$STATUS" -eq 200 ]; then
-            echo "Teste de autenticação /me bem-sucedido!"
+            echo "✅ Teste de autenticação /me bem-sucedido!"
           else
-            echo "Falha na autenticação (HTTP $STATUS)"
+            echo "❌ Falha na autenticação (HTTP $STATUS)"
             exit 1
           fi
 
