@@ -12,7 +12,7 @@ env:
   REDIS_HOST: ${{ secrets.REDIS_HOST }}
   MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
   MYSQL_PORT: ${{ secrets.MYSQL_PORT }}
-  MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+  MYSQL_HOST: database
   MYSQL_USER: ${{ secrets.MYSQL_USER }}
   NODE_ENV: ${{ secrets.NODE_ENV }}
   PORT: ${{ secrets.PORT }}
@@ -24,109 +24,113 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: 12345
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: admin
+          MYSQL_PASSWORD: 12345
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: bitnami/redis
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
-    - name: Checkout do repositório
-      uses: actions/checkout@v4
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
 
-    - name: Adicionar IP do GitHub ao arquivo de hosts
-      run: echo "$IP_DO_GITHUB github.com" | sudo tee -a /etc/hosts
-      env:
-        IP_DO_GITHUB: 20.201.28.151
+      - name: Criar arquivo .env
+        run: |
+          echo "PORT=${{ secrets.PORT }}" > .env
+          echo "MYSQL_HOST=database" >> .env
+          echo "MYSQL_USER=admin" >> .env
+          echo "MYSQL_PASSWORD=12345" >> .env
+          echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env
+          echo "MYSQL_PORT=3306" >> .env
+          echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> .env
+          echo "REDIS_HOST=redis" >> .env
+          echo "REDIS_PORT=6379" >> .env
+          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
+          echo "API_URL=${{ secrets.API_URL }}" >> .env
 
-    - name: Criar arquivo .env
-      run: |
-        echo "PORT=${{ secrets.PORT }}" > .env
-        echo "MYSQL_HOST=${{ secrets.MYSQL_HOST }}" >> .env
-        echo "API_URL=${{ secrets.API_URL }}" >> .env
-        echo "EMAIL=${{ secrets.EMAIL }}" >> .env
-        echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env
-        echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> .env
-        echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> .env
-        echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env
-        echo "MYSQL_PORT=${{ secrets.MYSQL_PORT }}" >> .env
-        echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env
-        echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> .env
-        echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
-        echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env
-        echo "REDIS_PREFIX=${{ secrets.REDIS_PREFIX }}" >> .env
+      - name: Instalar dependências
+        run: npm install
 
-    - name: Instalar dependências
-      run: npm install
+      - name: Gerar chaves RSA
+        run: npx ts-node -r tsconfig-paths/register src/shared/scripts/generateKeys.ts
 
-    - name: Subir containers Docker (MySQL / Redis)
-      run: docker compose up -d
+      - name: Aguardar o MySQL estar pronto
+        run: |
+          echo "Aguardando o MySQL responder na porta 3306..."
+          for i in {1..20}; do
+            if mysqladmin ping -h 127.0.0.1 --silent; then
+              echo "MySQL disponível!"
+              exit 0
+            fi
+            echo "Tentativa $i: aguardando..."
+            sleep 5
+          done
+          echo "MySQL não respondeu a tempo!"
+          exit 1
 
-    - name: Aguardar MySQL ficar disponível
-      run: |
-        echo "Aguardando MySQL responder na porta ${{ secrets.MYSQL_PORT }}..."
-        for i in {1..20}; do
-          nc -z ${{ secrets.MYSQL_HOST }} ${{ secrets.MYSQL_PORT }} && echo "MySQL disponível!" && break
-          echo "Tentativa $i: aguardando MySQL..."
-          sleep 5
-        done
+      - name: Iniciar API
+        run: |
+          yarn dev &
+          sleep 12
+          echo "API pronta para testes."
 
-    - name: Gerar chaves RSA
-      run: npx ts-node -r tsconfig-paths/register src/shared/scripts/generateKeys.ts
+      - name: Testar Login e JWT
+        run: |
+          echo "Testando endpoint /login..."
+          RESPONSE=$(curl -s -X POST http://localhost:${{ secrets.PORT }}/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"${{ secrets.EMAIL }}","password":"${{ secrets.PASSWORD }}"}')
 
-    - name: Iniciar API e aguardar disponibilidade
-      run: |
-        echo "Iniciando API..."
-        yarn dev &
+          echo "Resposta recebida:"
+          echo "$RESPONSE"
 
-        echo "Aguardando API responder na porta ${{ secrets.PORT }}..."
-        for i in {1..15}; do
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ secrets.PORT }}/login || true)
-          if [ "$STATUS" -eq 400 ] || [ "$STATUS" -eq 404 ]; then
-            echo "API está respondendo! (HTTP $STATUS)"
-            break
+          TOKEN=$(echo "$RESPONSE" | grep -o '"jwt_token":"[^"]*"' | cut -d'"' -f4)
+
+          if [ -z "$TOKEN" ]; then
+            echo "Falha no login — jwt_token não encontrado!"
+            exit 1
           fi
-          echo "Tentativa $i: aguardando..."
+
+          echo "Login bem-sucedido. Token extraído:"
+          echo "$TOKEN"
+
+          echo "Testando endpoint /me..."
+          ME_RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $TOKEN" http://localhost:${{ secrets.PORT }}/me)
+          BODY=$(echo "$ME_RESPONSE" | head -n1)
+          STATUS=$(echo "$ME_RESPONSE" | tail -n1)
+
+          echo "Código HTTP: $STATUS"
+          echo "Resposta /me:"
+          echo "$BODY"
+
+          if [ "$STATUS" -eq 200 ]; then
+            echo "Teste de autenticação /me bem-sucedido!"
+          else
+            echo "Falha na autenticação (HTTP $STATUS)"
+            exit 1
+          fi
+
+      - name: Rodar testes automatizados
+        run: |
           sleep 5
-        done
-
-        echo "API pronta para testes."
-
-    - name: Testar Login e JWT
-      run: |
-        echo "Testando endpoint /login..."
-        RESPONSE=$(curl -s -X POST http://localhost:${{ secrets.PORT }}/login \
-          -H "Content-Type: application/json" \
-          -d '{"email":"${{ secrets.EMAIL }}","password":"${{ secrets.PASSWORD }}"}')
-
-        echo "Resposta recebida:"
-        echo "$RESPONSE"
-
-        TOKEN=$(echo "$RESPONSE" | grep -o '"jwt_token":"[^"]*"' | cut -d'"' -f4)
-
-        if [ -z "$TOKEN" ]; then
-          echo "Falha no login — jwt_token não encontrado!"
-          exit 1
-        fi
-
-        echo "Login bem-sucedido. Token extraído:"
-        echo "$TOKEN"
-
-        echo "Testando endpoint /me..."
-        ME_RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $TOKEN" http://localhost:${{ secrets.PORT }}/me)
-        BODY=$(echo "$ME_RESPONSE" | head -n1)
-        STATUS=$(echo "$ME_RESPONSE" | tail -n1)
-
-        echo "Código HTTP: $STATUS"
-        echo "Resposta /me:"
-        echo "$BODY"
-
-        if [ "$STATUS" -eq 200 ]; then
-          echo "Teste de autenticação /me bem-sucedido!"
-        else
-          echo "Falha na autenticação (HTTP $STATUS)"
-          exit 1
-        fi
-
-    - name: Rodar testes automatizados
-      run: |
-        sleep 5
-        yarn test --testPathPattern=Service.spec.ts
-
-    - name: Finalizar containers
-      if: always()
-      run: docker compose down
+          yarn test --testPathPattern=Service.spec.ts
