@@ -10,8 +10,8 @@ services:
       - '3306:3306'
     environment:
       MYSQL_USER: admin
-      MYSQL_ROOT_PASSWORD: 123456
-      MYSQL_PASSWORD: 123456
+      MYSQL_ROOT_PASSWORD: 12345
+      MYSQL_PASSWORD: 12345
     logging:
       driver: "none"
     networks:
