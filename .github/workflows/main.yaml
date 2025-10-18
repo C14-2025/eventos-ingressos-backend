@@ -56,6 +56,15 @@ jobs:
     - name: Subir containers Docker (MySQL / Redis)
       run: docker compose up -d
 
+    - name: Aguardar MySQL ficar disponível
+      run: |
+        echo "Aguardando MySQL responder na porta ${{ secrets.MYSQL_PORT }}..."
+        for i in {1..20}; do
+          nc -z ${{ secrets.MYSQL_HOST }} ${{ secrets.MYSQL_PORT }} && echo "MySQL disponível!" && break
+          echo "Tentativa $i: aguardando MySQL..."
+          sleep 5
+        done
+
     - name: Gerar chaves RSA
       run: npx ts-node -r tsconfig-paths/register src/shared/scripts/generateKeys.ts
 
@@ -63,16 +72,19 @@ jobs:
       run: |
         echo "Iniciando API..."
         yarn dev &
+
         echo "Aguardando API responder na porta ${{ secrets.PORT }}..."
-        for i in {1..10}; do
-          if curl -s http://localhost:${{ secrets.PORT }}/login > /dev/null; then
-            echo "API está respondendo!"
+        for i in {1..15}; do
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ secrets.PORT }}/login || true)
+          if [ "$STATUS" -eq 400 ] || [ "$STATUS" -eq 404 ]; then
+            echo "API está respondendo! (HTTP $STATUS)"
             break
           fi
           echo "Tentativa $i: aguardando..."
           sleep 5
         done
-        echo "API iniciada para testes."
+
+        echo "API pronta para testes."
 
     - name: Testar Login e JWT
       run: |
