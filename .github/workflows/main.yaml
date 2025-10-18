@@ -25,15 +25,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name:  Checkout do repositório
+    - name: Checkout do repositório
       uses: actions/checkout@v4
 
-    - name:  Adicionar IP do GitHub ao arquivo de hosts
+    - name: Adicionar IP do GitHub ao arquivo de hosts
       run: echo "$IP_DO_GITHUB github.com" | sudo tee -a /etc/hosts
       env:
         IP_DO_GITHUB: 20.201.28.151
 
-    - name:  Criar arquivo .env
+    - name: Criar arquivo .env
       run: |
         echo "PORT=${{ secrets.PORT }}" > .env
         echo "MYSQL_HOST=${{ secrets.MYSQL_HOST }}" >> .env
@@ -50,24 +50,33 @@ jobs:
         echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env
         echo "REDIS_PREFIX=${{ secrets.REDIS_PREFIX }}" >> .env
 
-    - name:  Instalar dependências
+    - name: Instalar dependências
       run: npm install
 
-    - name:  Subir containers Docker (MySQL / Redis)
+    - name: Subir containers Docker (MySQL / Redis)
       run: docker compose up -d
 
-    - name:  Gerar chaves RSA
+    - name: Gerar chaves RSA
       run: npx ts-node -r tsconfig-paths/register src/shared/scripts/generateKeys.ts
 
-    - name:  Iniciar API
+    - name: Iniciar API e aguardar disponibilidade
       run: |
+        echo "Iniciando API..."
         yarn dev &
-        sleep 10
-        echo " API iniciada para testes."
+        echo "Aguardando API responder na porta ${{ secrets.PORT }}..."
+        for i in {1..10}; do
+          if curl -s http://localhost:${{ secrets.PORT }}/login > /dev/null; then
+            echo "API está respondendo!"
+            break
+          fi
+          echo "Tentativa $i: aguardando..."
+          sleep 5
+        done
+        echo "API iniciada para testes."
 
-    - name:  Testar Login e JWT
+    - name: Testar Login e JWT
       run: |
-        echo " Testando endpoint /login..."
+        echo "Testando endpoint /login..."
         RESPONSE=$(curl -s -X POST http://localhost:${{ secrets.PORT }}/login \
           -H "Content-Type: application/json" \
           -d '{"email":"${{ secrets.EMAIL }}","password":"${{ secrets.PASSWORD }}"}')
@@ -78,14 +87,14 @@ jobs:
         TOKEN=$(echo "$RESPONSE" | grep -o '"jwt_token":"[^"]*"' | cut -d'"' -f4)
 
         if [ -z "$TOKEN" ]; then
-          echo " Falha no login — jwt_token não encontrado!"
+          echo "Falha no login — jwt_token não encontrado!"
           exit 1
         fi
 
-        echo " Login bem-sucedido. Token extraído:"
+        echo "Login bem-sucedido. Token extraído:"
         echo "$TOKEN"
 
-        echo " Testando endpoint /me..."
+        echo "Testando endpoint /me..."
         ME_RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $TOKEN" http://localhost:${{ secrets.PORT }}/me)
         BODY=$(echo "$ME_RESPONSE" | head -n1)
         STATUS=$(echo "$ME_RESPONSE" | tail -n1)
@@ -95,17 +104,17 @@ jobs:
         echo "$BODY"
 
         if [ "$STATUS" -eq 200 ]; then
-          echo " Teste de autenticação /me bem-sucedido!"
+          echo "Teste de autenticação /me bem-sucedido!"
         else
-          echo " Falha na autenticação (HTTP $STATUS)"
+          echo "Falha na autenticação (HTTP $STATUS)"
           exit 1
         fi
 
-    - name:  Rodar testes automatizados
+    - name: Rodar testes automatizados
       run: |
         sleep 5
         yarn test --testPathPattern=Service.spec.ts
 
-    - name:  Finalizar containers
+    - name: Finalizar containers
       if: always()
       run: docker compose down
