@@ -8,9 +8,11 @@ import { IEventsRepository } from '@modules/events/repositories/IEventsRepositor
 import { IEventDTO } from '@modules/events/dtos/IEventDTO';
 import { AppError } from '@shared/errors/AppError';
 import { IFilesRepositoryDTO } from '@modules/system/repositories/IFilesRepository';
+import { Not } from 'typeorm';
+import { updateAttribute } from '@utils/mappers';
 
 @injectable()
-export class CreateEventService {
+export class UpdateEventService {
   public constructor(
     @inject('EventsRepository')
     private readonly eventsRepository: IEventsRepository,
@@ -28,12 +30,20 @@ export class CreateEventService {
 
   public async execute(
     eventData: IEventDTO,
+    id?: string
   ): Promise<IResponseDTO<Event>> {
     const trx = this.connection.mysql.createQueryRunner();
 
     await trx.startTransaction();
     try {
-      const eventWithSameDate = await this.eventsRepository.findBy({ where: { date: eventData.date } }, trx)
+
+      const evvent = await this.eventsRepository.findBy({ where: { id } }, trx)
+
+      if (!evvent) {
+        throw new AppError('NOT_FOUND', 'Event not found', 404);
+      }
+
+      const eventWithSameDate = await this.eventsRepository.findBy({ where: { id: Not(id as string), date: eventData.date } }, trx)
 
       if (eventWithSameDate) {
         const isSameTime = eventWithSameDate.time === eventData.time
@@ -51,7 +61,10 @@ export class CreateEventService {
         }
       }
 
-      const event = await this.eventsRepository.create(eventData, trx);
+      await this.eventsRepository.update(
+        updateAttribute(evvent, eventData),
+        trx,
+      );
 
       await this.cacheProvider.invalidatePrefix(
         `${this.connection.client}:events`,
@@ -62,7 +75,7 @@ export class CreateEventService {
         code: 201,
         message_code: 'CREATED',
         message: 'Event successfully created',
-        data: instanceToInstance(event),
+        data: instanceToInstance(evvent),
       };
     } catch (error: unknown) {
       if (trx.isTransactionActive) await trx.rollbackTransaction();

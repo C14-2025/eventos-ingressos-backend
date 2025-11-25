@@ -6,6 +6,10 @@ import { ITicketsRepository } from '@modules/events/repositories/ITicketsReposit
 import { TicketsRepository } from '@modules/events/repositories/TicketsRepository';
 import { IEventsRepository } from '@modules/events/repositories/IEventsRepository';
 import { EventsRepository } from '@modules/events/repositories/EventsRepository';
+import { IFilesRepositoryDTO } from '@modules/system/repositories/IFilesRepository';
+import { FilesRepository } from '@modules/system/repositories/FilesRepository';
+import { IFoldersRepositoryDTO } from '@modules/system/repositories/IFoldersRepository';
+import { FoldersRepository } from '@modules/system/repositories/FoldersRepository';
 
 container.registerSingleton<IUsersRepository>(
   'UsersRepository',
@@ -21,4 +25,15 @@ container.registerSingleton<IEventsRepository>(
   'EventsRepository',
   EventsRepository,
 );
+
+container.registerSingleton<IFilesRepositoryDTO>(
+  'FilesRepository',
+  FilesRepository,
+);
+
+container.registerSingleton<IFoldersRepositoryDTO>(
+  'FoldersRepository',
+  FoldersRepository,
+);
+
 

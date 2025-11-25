@@ -1,18 +1,22 @@
 import { injectable, inject } from 'tsyringe';
+
+import { IFilesRepositoryDTO } from '@modules/system/repositories/IFilesRepository';
 import { ICacheProvider } from '@shared/container/providers/CacheProvider/models/ICacheProvider';
+import { File } from '@modules/system/entities/File';
 import { instanceToInstance } from 'class-transformer';
 import { ICacheDTO } from '@dtos/ICacheDTO';
 import { IListDTO } from '@dtos/IListDTO';
 import { IConnection } from '@shared/typeorm';
+import { Get, Route, Tags, Query, Inject } from 'tsoa';
 import { FindOptionsWhere } from 'typeorm';
-import { Event } from '@modules/events/entities/Event';
-import { IEventsRepository } from '@modules/events/repositories/IEventsRepository';
 
+@Route('/files')
 @injectable()
-export class ListEventService {
+export class ListFileService {
   public constructor(
-    @inject('EventsRepository')
-    private readonly eventsRepository: IEventsRepository,
+    @inject('FilesRepository')
+    private readonly filesRepository: IFilesRepositoryDTO,
+
 
     @inject('CacheProvider')
     private readonly cacheProvider: ICacheProvider,
@@ -21,23 +25,25 @@ export class ListEventService {
     private readonly connection: IConnection,
   ) { }
 
+  @Get()
+  @Tags('File')
   public async execute(
-    page: number,
-    limit: number,
-    filters: FindOptionsWhere<Event>,
-  ): Promise<IListDTO<Event>> {
+    @Query() page: number,
+    @Query() limit: number,
+    @Inject() filters: FindOptionsWhere<File>,
+  ): Promise<IListDTO<File>> {
     const trx = this.connection.mysql.createQueryRunner();
 
     await trx.startTransaction();
     try {
       const cacheKey = `${this.connection.client
-        }:events:${page}:${limit}:${JSON.stringify(filters)}`;
+        }:files:${page}:${limit}:${JSON.stringify(filters)}`;
 
-      let cache = await this.cacheProvider.recovery<ICacheDTO<Event>>(cacheKey);
+      let cache = await this.cacheProvider.recovery<ICacheDTO<File>>(cacheKey);
 
       if (!cache) {
-        const { list, amount } = await this.eventsRepository.findAll(
-          { where: filters, page, limit, relations: { tickets: true, file: true } },
+        const { list, amount } = await this.filesRepository.findAll(
+          { page, limit, where: filters, select: { id: true, name: true } },
           trx,
         );
         cache = { data: instanceToInstance(list), total: amount };
@@ -46,10 +52,11 @@ export class ListEventService {
 
       if (trx.isTransactionActive) await trx.commitTransaction();
 
+
       return {
         code: 200,
         message_code: 'LISTED',
-        message: 'Successfully listed events',
+        message: 'Successfully listed files',
         pagination: {
           total: cache.total,
           page,

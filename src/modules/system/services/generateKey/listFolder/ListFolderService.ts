@@ -1,18 +1,22 @@
 import { injectable, inject } from 'tsyringe';
+
+import { IFoldersRepositoryDTO } from '@modules/system/repositories/IFoldersRepository';
 import { ICacheProvider } from '@shared/container/providers/CacheProvider/models/ICacheProvider';
+import { Folder } from '@modules/system/entities/Folder';
 import { instanceToInstance } from 'class-transformer';
 import { ICacheDTO } from '@dtos/ICacheDTO';
 import { IListDTO } from '@dtos/IListDTO';
 import { IConnection } from '@shared/typeorm';
+import { Get, Route, Tags, Query, Inject } from 'tsoa';
 import { FindOptionsWhere } from 'typeorm';
-import { Event } from '@modules/events/entities/Event';
-import { IEventsRepository } from '@modules/events/repositories/IEventsRepository';
 
+@Route('/folders')
 @injectable()
-export class ListEventService {
+export class ListFolderService {
   public constructor(
-    @inject('EventsRepository')
-    private readonly eventsRepository: IEventsRepository,
+    @inject('FoldersRepository')
+    private readonly foldersRepository: IFoldersRepositoryDTO,
+
 
     @inject('CacheProvider')
     private readonly cacheProvider: ICacheProvider,
@@ -21,25 +25,35 @@ export class ListEventService {
     private readonly connection: IConnection,
   ) { }
 
+  @Get()
+  @Tags('Folder')
   public async execute(
-    page: number,
-    limit: number,
-    filters: FindOptionsWhere<Event>,
-  ): Promise<IListDTO<Event>> {
+    @Query() page: number,
+    @Query() limit: number,
+    @Inject() filters: FindOptionsWhere<Folder>,
+  ): Promise<IListDTO<Folder>> {
     const trx = this.connection.mysql.createQueryRunner();
 
     await trx.startTransaction();
     try {
       const cacheKey = `${this.connection.client
-        }:events:${page}:${limit}:${JSON.stringify(filters)}`;
+        }:folders:${page}:${limit}:${JSON.stringify(filters)}`;
 
-      let cache = await this.cacheProvider.recovery<ICacheDTO<Event>>(cacheKey);
+      let cache = await this.cacheProvider.recovery<ICacheDTO<Folder>>(
+        cacheKey,
+      );
 
       if (!cache) {
-        const { list, amount } = await this.eventsRepository.findAll(
-          { where: filters, page, limit, relations: { tickets: true, file: true } },
+        const { list, amount } = await this.foldersRepository.findAll(
+          {
+            page,
+            limit,
+            where: filters,
+            select: { id: true, name: true },
+          },
           trx,
         );
+
         cache = { data: instanceToInstance(list), total: amount };
         await this.cacheProvider.save(cacheKey, cache);
       }
@@ -49,7 +63,7 @@ export class ListEventService {
       return {
         code: 200,
         message_code: 'LISTED',
-        message: 'Successfully listed events',
+        message: 'Successfully listed folders',
         pagination: {
           total: cache.total,
           page,

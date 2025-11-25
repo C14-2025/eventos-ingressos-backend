@@ -5,9 +5,11 @@
       "type": "node",
       "request": "launch",
       "name": "Debug Backend (TS + Paths)",
-      "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/apps/backend/src/shared/server.ts",
-      "cwd": "${workspaceFolder}/apps/backend",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "program": "${workspaceFolder}/src/shared/server.ts",
+      // "cwd": "${workspaceFolder}/apps/backend",
       "runtimeArgs": [
         "-r",
         "ts-node/register",

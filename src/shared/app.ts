@@ -1,6 +1,6 @@
 import 'express-async-errors';
 import { setConnection } from '@middlewares/setConnection';
-// import { storageConfig } from '@config/storage'; // storageProvider
+import { storageConfig } from '@config/storage';
 import { cryptoConfig } from '@config/crypto'; // cryptoProvider
 import cors from 'cors';
 import express, { Express } from 'express';
@@ -33,9 +33,9 @@ class App {
   }
 
   private staticRoutes(): void {
-    this.server.use('/api-docs', serve, setup(swaggerDocs));
-    // this.server.use('/uploads', express.static(storageConfig.config.uploadsFolder)); // storageProvider
-    this.server.use('/jwks', express.static(cryptoConfig.config.jwksPath)); 
+    // this.server.use('/api-docs', serve, setup(swaggerDocs));
+    this.server.use('/uploads', express.static(storageConfig.config.uploadsFolder)); // storageProvider
+    this.server.use('/jwks', express.static(cryptoConfig.config.jwksPath));
   }
 
   private errorHandlers(): void {

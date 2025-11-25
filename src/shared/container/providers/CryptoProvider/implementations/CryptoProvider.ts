@@ -21,7 +21,7 @@ import { ICryptoDTO } from '../dtos/ICryptoDTO';
 import { ICryptoProviderDTO } from '../models/ICryptoProvider';
 
 export class CryptoProvider implements ICryptoProviderDTO {
-  
+
   public encrypt(text: string): ICryptoDTO {
     const iv = randomBytes(16);
 
@@ -71,8 +71,8 @@ export class CryptoProvider implements ICryptoProviderDTO {
     );
 
     const jwtToken = sign(payload, secret, {
-      expiresIn: authConfig.config.jwt.expiresIn,
-      ...options,
+      // expiresIn: authConfig.config.jwt.expiresIn,
+      // ...options,
       algorithm: 'RS256',
     });
 

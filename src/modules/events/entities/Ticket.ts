@@ -1,4 +1,4 @@
-import { Event} from '@modules/events/entities/Event';
+import { Event } from '@modules/events/entities/Event';
 import { Base } from '@shared/container/modules/entities/Base';
 import {
   Column,
@@ -10,10 +10,13 @@ import {
 
 @Entity('tickets')
 export class Ticket extends Base {
-  @Column({ type: 'uuid'})
+  @Column({ type: 'varchar', nullable: false })
+  public document: string;
+
+  @Column({ type: 'uuid', nullable: false })
   public event_id: string;
 
   @ManyToOne(() => Event, event => event.tickets)
-  @JoinColumn({ name: 'event_id' }) 
+  @JoinColumn({ name: 'event_id' })
   public event: Event
 }

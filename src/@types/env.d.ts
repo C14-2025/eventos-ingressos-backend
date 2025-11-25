@@ -16,7 +16,7 @@ declare namespace NodeJS {
     readonly REDIS_PORT: string;
     readonly REDIS_PASSWORD: string;
     readonly REDIS_PREFIX: string;
-    readonly STORAGE_DRIVER: 'disk' | 's3';
+    readonly STORAGE_DRIVER: 'disk';
     readonly STORAGE_BUCKET: string;
     readonly STORAGE_USER: string;
     readonly STORAGE_PASS: string;
