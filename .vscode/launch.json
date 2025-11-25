@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Backend (TS + Paths)",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/apps/backend/src/shared/server.ts",
+      "cwd": "${workspaceFolder}/apps/backend",
+      "runtimeArgs": [
+        "-r",
+        "ts-node/register",
+        "-r",
+        "tsconfig-paths/register"
+      ],
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "console": "integratedTerminal"
+    }
+  ]
+}
