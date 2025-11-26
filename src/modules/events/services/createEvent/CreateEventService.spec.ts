@@ -2,13 +2,17 @@ import { FakeCacheProvider } from '@shared/container/providers/CacheProvider/fak
 import { ICacheProvider } from '@shared/container/providers/CacheProvider/models/ICacheProvider';
 import { Connection, IConnection } from '@shared/typeorm';
 import { FakeDataSource } from '@shared/typeorm/dataSources/fakes/fakeDataSource';
-import { CreateEventService } from './CreateEventService';
+import { FakeFilesRepository } from '@shared/container/modules/system/repositories/fakes/FakeFilesRepository';
+
 import { IEventsRepository } from '@modules/events/repositories/IEventsRepository';
 import { FakeEventsRepository } from '@modules/events/repositories/fakes/FakeEventsRepository';
 import { IEventDTO } from '@modules/events/dtos/IEventDTO';
+import { IFilesRepositoryDTO } from '@modules/system/repositories/IFilesRepository';
+import { CreateEventService } from './CreateEventService';
 
 let fakeCacheProvider: ICacheProvider;
 let fakeEventsRepository: IEventsRepository;
+let fakeFilesRepository: IFilesRepositoryDTO;
 let createEventService: CreateEventService;
 let connection: IConnection;
 
@@ -18,12 +22,14 @@ describe('CreateUserService', (): void => {
   });
 
   beforeEach((): void => {
-    fakeEventsRepository = new FakeEventsRepository()
-    fakeCacheProvider = new FakeCacheProvider()
+    fakeEventsRepository = new FakeEventsRepository();
+    fakeCacheProvider = new FakeCacheProvider();
+    fakeFilesRepository = new FakeFilesRepository();
     createEventService = new CreateEventService(
       fakeEventsRepository,
       fakeCacheProvider,
-      connection
+      fakeFilesRepository,
+      connection,
     );
   });
 
@@ -51,10 +57,9 @@ describe('CreateUserService', (): void => {
 
     await createEventService.execute(eventData);
 
-    await expect(
-      createEventService.execute(eventData),
-    ).rejects.toThrow('Cannot create event, there is a event at the same time');
-
+    await expect(createEventService.execute(eventData)).rejects.toThrow(
+      'Cannot create event, there is a event at the same time',
+    );
   });
 
   it('should allow creating two events on the same day but at different times', async (): Promise<void> => {
@@ -77,6 +82,4 @@ describe('CreateUserService', (): void => {
     expect(response2.code).toBe(201);
     expect(response1.data.time).not.toBe(response2.data.time);
   });
-
-
 });
