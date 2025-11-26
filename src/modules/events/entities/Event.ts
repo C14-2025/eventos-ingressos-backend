@@ -29,7 +29,7 @@ export class Event extends Base {
   @Column({ type: 'float', nullable: false, default: 0 })
   public price: number;
 
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ type: 'varchar', nullable: true })
   public file_id: string;
 
   @OneToOne(() => File)

@@ -5,6 +5,8 @@ import { SellTicketController } from '@modules/events/services/sellTicket/SellTi
 import { ShowEventController } from '@modules/events/services/showEvent/ShowEventController';
 import { UpdateEventController } from '@modules/events/services/updateEvent/UpdateEventController';
 import { DeleteEventController } from '@modules/events/services/deleteEvent/DeleteEventController';
+import { ShowTicketController } from '@modules/events/services/showTicket/ShowTicketController';
+import { UpdateTicketController } from '@modules/events/services/updateTicket/UpdateTicketController';
 
 const eventRouter = Router();
 
@@ -14,11 +16,21 @@ const showEventController = new ShowEventController()
 const sellTicketController = new SellTicketController()
 const updateEventController = new UpdateEventController()
 const deleteEventController = new DeleteEventController()
+const showTicketController = new ShowTicketController()
+const updateTicketController = new UpdateTicketController()
 
 eventRouter
   .route('/events')
   .post(createEventController.handle)
   .get(listEventController.handle)
+
+eventRouter
+  .route('/tickets/:document')
+  .get(showTicketController.handle)
+
+eventRouter
+  .route('/tickets/:id')
+  .put(updateTicketController.handle)
 
 eventRouter
   .route('/events/:id')

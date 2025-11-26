@@ -33,7 +33,7 @@ export class CreateEventService {
 
     await trx.startTransaction();
     try {
-      const eventWithSameDate = await this.eventsRepository.findBy({ where: { date: eventData.date } }, trx)
+      const eventWithSameDate = await this.eventsRepository.findBy({ where: { date: eventData.date, time: eventData.time } }, trx)
 
       if (eventWithSameDate) {
         const isSameTime = eventWithSameDate.time === eventData.time
