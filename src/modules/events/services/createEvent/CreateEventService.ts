@@ -23,31 +23,38 @@ export class CreateEventService {
 
     @inject('Connection')
     private readonly connection: IConnection,
-  ) { }
+  ) {}
 
-
-  public async execute(
-    eventData: IEventDTO,
-  ): Promise<IResponseDTO<Event>> {
+  public async execute(eventData: IEventDTO): Promise<IResponseDTO<Event>> {
     const trx = this.connection.mysql.createQueryRunner();
 
     await trx.startTransaction();
     try {
-      const eventWithSameDate = await this.eventsRepository.findBy({ where: { date: eventData.date, time: eventData.time } }, trx)
+      const eventWithSameDate = await this.eventsRepository.findBy(
+        { where: { date: eventData.date, time: eventData.time } },
+        trx,
+      );
 
       if (eventWithSameDate) {
-        const isSameTime = eventWithSameDate.time === eventData.time
+        const isSameTime = eventWithSameDate.time === eventData.time;
 
         if (isSameTime) {
-          throw new AppError('BAD_REQUEST', 'Cannot create event, there is a event at the same time', 400)
+          throw new AppError(
+            'BAD_REQUEST',
+            'Cannot create event, there is a event at the same time',
+            400,
+          );
         }
       }
 
       if (eventData?.file_id) {
-        const file = await this.filesRepository.exists({ where: { id: eventData.file_id } }, trx)
+        const file = await this.filesRepository.exists(
+          { where: { id: eventData.file_id } },
+          trx,
+        );
 
         if (!file) {
-          throw new AppError('BAD_REQUEST', 'File not found', 404)
+          throw new AppError('BAD_REQUEST', 'File not found', 404);
         }
       }
 

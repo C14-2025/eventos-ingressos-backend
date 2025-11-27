@@ -24,8 +24,7 @@ export class SellTicketService {
 
     @inject('Connection')
     private readonly connection: IConnection,
-  ) { }
-
+  ) {}
 
   public async execute(
     ticketData: ITicketDTO,
@@ -34,25 +33,41 @@ export class SellTicketService {
 
     await trx.startTransaction();
     try {
-
-      const event = await this.eventsRepository.findBy({ where: { id: ticketData.event_id } }, trx)
+      const event = await this.eventsRepository.findBy(
+        { where: { id: ticketData.event_id } },
+        trx,
+      );
 
       if (!event) {
-        throw new AppError('BAD_REQUEST', 'No event for this ticket', 404)
+        throw new AppError('BAD_REQUEST', 'No event for this ticket', 404);
       }
 
-      const { amount } = await this.ticketsRepository.findAll({ where: { event_id: ticketData.event_id } }, trx)
+      const { amount } = await this.ticketsRepository.findAll(
+        { where: { event_id: ticketData.event_id } },
+        trx,
+      );
 
       if (amount > event.capacity) {
-        throw new AppError('BAD_REQUEST', 'No more tickets for this event', 400)
+        throw new AppError(
+          'BAD_REQUEST',
+          'No more tickets for this event',
+          400,
+        );
       }
 
-      const ticketAlreadyBought = await this.ticketsRepository.exists({ where: { document: ticketData.document, event_id: ticketData.event_id } }, trx)
+      const ticketAlreadyBought = await this.ticketsRepository.exists(
+        {
+          where: {
+            document: ticketData.document,
+            event_id: ticketData.event_id,
+          },
+        },
+        trx,
+      );
 
       if (ticketAlreadyBought) {
-        throw new AppError('BAD_REQUEST', 'Just one ticket per person', 400)
+        throw new AppError('BAD_REQUEST', 'Just one ticket per person', 400);
       }
-
 
       const ticket = await this.ticketsRepository.create(ticketData, trx);
 

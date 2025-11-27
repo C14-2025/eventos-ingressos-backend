@@ -1,13 +1,7 @@
 import { Base } from '@shared/container/modules/entities/Base';
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  OneToMany,
-  OneToOne,
-} from 'typeorm';
-import { Ticket } from './Ticket';
+import { Column, Entity, JoinColumn, OneToMany, OneToOne } from 'typeorm';
 import { File } from '@modules/system/entities/File';
+import { Ticket } from './Ticket';
 
 @Entity('events')
 export class Event extends Base {
@@ -38,9 +32,8 @@ export class Event extends Base {
     referencedColumnName: 'id',
     foreignKeyConstraintName: 'FK_file_product',
   })
-  public file: File
+  public file: File;
 
   @OneToMany(() => Ticket, ticket => ticket.event)
-  public tickets: Array<Ticket>
-
+  public tickets: Array<Ticket>;
 }

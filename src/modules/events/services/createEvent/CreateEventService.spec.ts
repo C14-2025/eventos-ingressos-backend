@@ -18,7 +18,7 @@ let connection: IConnection;
 
 describe('CreateUserService', (): void => {
   beforeAll((): void => {
-    connection = new Connection('database_test', FakeDataSource);
+    connection = new Connection('database', FakeDataSource);
   });
 
   beforeEach((): void => {
@@ -34,9 +34,12 @@ describe('CreateUserService', (): void => {
   });
 
   it('should create a new event successfully', async (): Promise<void> => {
+    const file = await fakeFilesRepository.create({ folder_id: '123' });
+
     const eventData: IEventDTO = {
       title: 'Test Event',
       date: '2025-09-20',
+      file_id: file.id,
       time: '18:00',
     };
 
@@ -46,6 +49,18 @@ describe('CreateUserService', (): void => {
     expect(response.message_code).toBe('CREATED');
     expect(response.data).toHaveProperty('id');
     expect(response.data.title).toBe('Test Event');
+  });
+
+  it('should not create a new event with a wrong file_id', async (): Promise<void> => {
+    const eventData: IEventDTO = {
+      title: 'Test Event',
+      file_id: '123',
+      date: '2025-09-20',
+      time: '18:00',
+    };
+    await expect(createEventService.execute(eventData)).rejects.toThrow(
+      'File not found',
+    );
   });
 
   it('should not create an event if another exists at the same date and time', async (): Promise<void> => {

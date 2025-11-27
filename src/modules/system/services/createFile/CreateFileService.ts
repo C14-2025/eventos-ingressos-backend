@@ -23,13 +23,12 @@ export class CreateFileService {
     @inject('StorageProvider')
     private readonly storageProvider: IStorageProviderDTO,
 
-
     @inject('CacheProvider')
     private readonly cacheProvider: ICacheProvider,
 
     @inject('Connection')
     private readonly connection: IConnection,
-  ) { }
+  ) {}
 
   public async execute(
     fileData: ICreateFileDTO,
@@ -52,10 +51,7 @@ export class CreateFileService {
       );
 
       if (!folder) {
-        throw new AppError(
-          'BAD_REQUEST',
-          'Could not resolve folder location',
-        );
+        throw new AppError('BAD_REQUEST', 'Could not resolve folder location');
       }
 
       const fileDataArray: Array<IFileDTO> = [];

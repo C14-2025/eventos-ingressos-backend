@@ -9,6 +9,6 @@ export class FakeEventsRepository
   public constructor() {
     super(Event);
 
-  // non-generic methods here
-}
+    // non-generic methods here
+  }
 }
