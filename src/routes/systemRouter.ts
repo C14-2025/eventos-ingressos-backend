@@ -16,7 +16,7 @@ systemRouter.route('/generate-keys').post(systemController.handle);
 
 systemRouter
   .route('/files')
-  .post(upload.fields([{ name: 'files' }]), createFileController.handle);
+  .post(upload.fields([{ name: 'files' }]) as any, createFileController.handle);
 
 systemRouter.route('/folders').post(createFolderController.handle);
 

@@ -5,15 +5,15 @@ import { IResponseDTO } from '@dtos/IResponseDTO';
 import { IConnection } from '@shared/typeorm';
 import { AppError } from '@shared/errors/AppError';
 import { updateAttribute } from '@utils/mappers';
-import { TicketsRepository } from '@modules/events/repositories/TicketsRepository';
 import { ITicketDTO } from '@modules/events/dtos/ITicketDTO';
 import { Ticket } from '@modules/events/entities/Ticket';
+import { ITicketsRepository } from '@modules/events/repositories/ITicketsRepository';
 
 @injectable()
 export class UpdateTicketService {
   public constructor(
     @inject('TicketsRepository')
-    private readonly ticketsRepository: TicketsRepository,
+    private readonly ticketsRepository: ITicketsRepository,
 
     @inject('CacheProvider')
     private readonly cacheProvider: ICacheProvider,

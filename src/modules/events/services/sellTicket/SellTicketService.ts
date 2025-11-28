@@ -24,7 +24,7 @@ export class SellTicketService {
 
     @inject('Connection')
     private readonly connection: IConnection,
-  ) {}
+  ) { }
 
   public async execute(
     ticketData: ITicketDTO,
@@ -47,7 +47,8 @@ export class SellTicketService {
         trx,
       );
 
-      if (amount > event.capacity) {
+
+      if (amount >= event.capacity) {
         throw new AppError(
           'BAD_REQUEST',
           'No more tickets for this event',

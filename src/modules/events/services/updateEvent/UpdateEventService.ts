@@ -45,6 +45,7 @@ export class UpdateEventService {
 
       const eventWithSameDate = await this.eventsRepository.findBy({ where: { id: Not(id as string), date: eventData.date } }, trx)
 
+
       if (eventWithSameDate) {
         const isSameTime = eventWithSameDate.time === eventData.time
 
