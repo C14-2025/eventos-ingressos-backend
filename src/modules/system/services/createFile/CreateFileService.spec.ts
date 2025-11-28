@@ -50,7 +50,6 @@ describe('CreateFileService', () => {
     );
   });
 
-  // ----------------------------------------------------------------------
 
   it('should create a new file successfully', async () => {
     const folder = await fakeFoldersRepository.create({
@@ -73,13 +72,11 @@ describe('CreateFileService', () => {
 
     expect(response.data.length).toBe(2);
 
-    // Foi salvo na StorageProvider
 
     expect(queryRunner.commitTransaction).toHaveBeenCalled();
     expect(queryRunner.release).toHaveBeenCalled();
   });
 
-  // ----------------------------------------------------------------------
 
   it('should throw if folder does not exist', async () => {
     await expect(
