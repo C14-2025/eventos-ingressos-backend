@@ -6,11 +6,9 @@ import { User } from '@modules/users/entities/User';
 import { instanceToInstance } from 'class-transformer';
 import { IResponseDTO } from '@dtos/IResponseDTO';
 import { IConnection } from '@shared/typeorm';
-import { Route, Tags, Post, Body } from 'tsoa';
 import { IHashProviderDTO } from '@shared/container/providers/HashProvider/models/IHashProvider';
 import { AppError } from '@shared/errors/AppError';
 
-@Route('/users')
 @injectable()
 export class CreateUserService {
   public constructor(
@@ -25,12 +23,10 @@ export class CreateUserService {
 
     @inject('HashProvider')
     private readonly hashProvider: IHashProviderDTO,
-  ) {}
+  ) { }
 
-  @Post()
-  @Tags('User')
   public async execute(
-    @Body() userData: IUserDTO,
+    userData: IUserDTO,
   ): Promise<IResponseDTO<User>> {
     const trx = this.connection.mysql.createQueryRunner();
 

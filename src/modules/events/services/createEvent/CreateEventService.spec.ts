@@ -2,13 +2,14 @@ import { FakeCacheProvider } from '@shared/container/providers/CacheProvider/fak
 import { ICacheProvider } from '@shared/container/providers/CacheProvider/models/ICacheProvider';
 import { Connection, IConnection } from '@shared/typeorm';
 import { FakeDataSource } from '@shared/typeorm/dataSources/fakes/fakeDataSource';
-import { FakeFilesRepository } from '@shared/container/modules/system/repositories/fakes/FakeFilesRepository';
+
 
 import { IEventsRepository } from '@modules/events/repositories/IEventsRepository';
 import { FakeEventsRepository } from '@modules/events/repositories/fakes/FakeEventsRepository';
 import { IEventDTO } from '@modules/events/dtos/IEventDTO';
 import { IFilesRepositoryDTO } from '@modules/system/repositories/IFilesRepository';
 import { CreateEventService } from './CreateEventService';
+import { FakeFilesRepository } from '@modules/system/repositories/fakes/FakeFilesRepository';
 
 let fakeCacheProvider: ICacheProvider;
 let fakeEventsRepository: IEventsRepository;

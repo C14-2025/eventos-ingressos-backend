@@ -3,14 +3,12 @@ import { IHashProviderDTO } from "@shared/container/providers/HashProvider/model
 import { ICryptoProviderDTO } from "@shared/container/providers/CryptoProvider/models/ICryptoProvider";
 import { ICacheProvider } from "@shared/container/providers/CacheProvider/models/ICacheProvider";
 import { IConnection } from "@shared/typeorm";
-import { Body, Route } from "tsoa";
 import { injectable, inject } from "tsyringe";
 import { AppError } from "@shared/errors/AppError";
 import { IResponseDTO } from "@dtos/IResponseDTO";
 import { IAuthDTO } from "@modules/users/dtos/IAuthDTO";
 
 
-@Route('/login')
 @injectable()
 export class AuthenticateUserService {
   public constructor(
@@ -32,7 +30,7 @@ export class AuthenticateUserService {
 
 
   public async execute(
-    @Body() payload: IAuthDTO): Promise<IResponseDTO<{
+    payload: IAuthDTO): Promise<IResponseDTO<{
       jwt_token: string;
       refresh_token: string;
     }>> {

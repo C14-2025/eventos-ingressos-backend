@@ -17,7 +17,20 @@ services:
     volumes:
       - database:/var/lib/mysql
 
-
+  jenkins_node:
+    image: luised160/s107-jenkins-node:TAG
+    container_name: jenkins
+    privileged: true
+    user: root
+    ports:
+     - 8080:8080
+     - 50000:50000
+     - 3333:3333
+    # volumes:
+    #   - ./jenkins_compose/jenkins_configuration:/var/jenkins_home
+    #   - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+    - rs-network
 
   redis:
     image: bitnami/redis

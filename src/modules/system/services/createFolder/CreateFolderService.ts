@@ -8,9 +8,7 @@ import { Folder } from '@modules/system/entities/Folder';
 import { instanceToInstance } from 'class-transformer';
 import { IResponseDTO } from '@dtos/IResponseDTO';
 import { Connection } from '@shared/typeorm';
-import { Route, Tags, Post, Body } from 'tsoa';
 
-@Route('/folders')
 @injectable()
 export class CreateFolderService {
 
@@ -26,10 +24,8 @@ export class CreateFolderService {
   ) {
   }
 
-  @Post()
-  @Tags('Folder')
   public async execute(
-    @Body() folderData: IFolderDTO,
+    folderData: IFolderDTO,
   ): Promise<IResponseDTO<Folder>> {
     const trx = this.connection.mysql.createQueryRunner();
 

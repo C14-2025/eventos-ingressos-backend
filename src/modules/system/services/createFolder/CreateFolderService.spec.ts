@@ -7,7 +7,7 @@ import { ICacheProvider } from '@shared/container/providers/CacheProvider/models
 import { FakeCacheProvider } from '@shared/container/providers/CacheProvider/fakes/FakeCacheProvider';
 
 import { IFoldersRepositoryDTO } from '@modules/system/repositories/IFoldersRepository';
-import { FakeFoldersRepository } from '@shared/container/modules/system/repositories/fakes/FakeFoldersRepository';
+import { FakeFoldersRepository } from '@modules/system/repositories/fakes/FakeFoldersRepository';
 
 let connection: IConnection;
 let createFolderService: CreateFolderService;
