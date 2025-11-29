@@ -18,7 +18,7 @@ services:
       - database:/var/lib/mysql
 
   jenkins_node:
-    image: luised160/s107-jenkins-node:TAG
+    image: jenkins/jenkins:lts
     container_name: jenkins
     privileged: true
     user: root

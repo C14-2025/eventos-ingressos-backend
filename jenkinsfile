@@ -49,10 +49,10 @@ pipeline {
             }
         }
 
-        stage('Notificar usuários') {
-            steps {
-                sh 'node src/modules/users/services/sendEmail.ts'
-            }
-        }
+        // stage('Notificar usuários') {
+        //     steps {
+        //         sh 'node src/modules/users/services/sendEmail.ts'
+        //     }
+        // }
     }
 }
