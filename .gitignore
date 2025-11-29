@@ -4,6 +4,7 @@
 /src/assets/errors.log
 /tsconfig.tsbuildinfo
 /node_modules
+/jenkins_compose
 /yarn.lock
 /src/keys
 /coverage
