@@ -74,11 +74,7 @@ export class SellTicketService {
 
       const ticketId = ticket.id
 
-      console.log("TICKET GERADO:", ticket);
-      console.log("ID DO TICKET:", ticket.id, typeof ticket.id);
-
-
-      const qrCodeBase64 = await QRCode.toDataURL(ticketId, { margin: 2, width: 300, errorCorrectionLevel: "M" });
+      const qrCodeBase64 = await QRCode.toDataURL(ticketId, { margin: 4, width: 300, errorCorrectionLevel: "M" });
 
       await this.cacheProvider.invalidatePrefix(
         `${this.connection.client}:tickets`,
