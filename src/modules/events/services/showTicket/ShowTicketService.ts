@@ -33,10 +33,7 @@ export class ShowTicketService {
       if (list.length) {
         const promises = list.map(async ticket => {
 
-          const qrData = {
-            ticketId: ticket.id
-          };
-          const qrCodeBase64 = await QRCode.toDataURL(JSON.stringify(qrData))
+          const qrCodeBase64 = await QRCode.toDataURL(ticket.id, { margin: 2, width: 300, errorCorrectionLevel: "M" });
 
           return {
             ...ticket,

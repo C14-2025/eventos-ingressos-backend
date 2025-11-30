@@ -72,11 +72,7 @@ export class SellTicketService {
 
       const ticket = await this.ticketsRepository.create(ticketData, trx);
 
-      const qrData = {
-        ticketId: ticket.id
-      };
-
-      const qrCodeBase64 = await QRCode.toDataURL(JSON.stringify(qrData));
+      const qrCodeBase64 = await QRCode.toDataURL(ticket.id, { margin: 2, width: 300, errorCorrectionLevel: "M" });
 
       await this.cacheProvider.invalidatePrefix(
         `${this.connection.client}:tickets`,
