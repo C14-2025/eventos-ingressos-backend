@@ -34,10 +34,7 @@ export class ShowTicketService {
         const promises = list.map(async ticket => {
 
           const qrData = {
-            ticketId: ticket.id,
-            eventId: ticket.event_id,
-            document: ticket.document,
-            date: new Date().toISOString(),
+            ticketId: ticket.id
           };
           const qrCodeBase64 = await QRCode.toDataURL(JSON.stringify(qrData))
 

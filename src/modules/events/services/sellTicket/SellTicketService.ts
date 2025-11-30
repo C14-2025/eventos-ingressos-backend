@@ -73,10 +73,7 @@ export class SellTicketService {
       const ticket = await this.ticketsRepository.create(ticketData, trx);
 
       const qrData = {
-        ticketId: ticket.id,
-        eventId: ticket.event_id,
-        document: ticketData.document,
-        date: new Date().toISOString(),
+        ticketId: ticket.id
       };
 
       const qrCodeBase64 = await QRCode.toDataURL(JSON.stringify(qrData));
