@@ -29,11 +29,11 @@ pipeline {
             }
         }
 
-        // stage('Tests') {
-        //     steps {
-        //         sh 'npm run test2'
-        //     }
-        // }
+        stage('Tests') {
+            steps {
+                sh 'npm run test2'
+            }
+        }
 
         stage('Build') {
             steps {
