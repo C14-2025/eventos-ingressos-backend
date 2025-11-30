@@ -54,7 +54,7 @@ pipeline {
                           sh '''
                           ssh -o StrictHostKeyChecking=no ubuntu@ec2-18-222-99-213.us-east-2.compute.amazonaws.com << 'EOF'
 
-                          cd evenetos-ingressos-backend
+                          cd eventos-ingressos-backend
 
                           echo "🛠 Atualizando código..."
                           git pull
