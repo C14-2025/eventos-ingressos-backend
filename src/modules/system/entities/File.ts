@@ -35,7 +35,7 @@ export class File extends Base {
     }
     switch (storageConfig.driver) {
       case 'disk':
-        return `http://host.docker.internal:3333/uploads/${this.file}`;
+        return `${process.env.API_URL}/uploads/${this.file}`;
       default:
         return null;
     }
