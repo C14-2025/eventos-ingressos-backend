@@ -49,33 +49,33 @@ pipeline {
         }
 
         stage('Deploy to EC2') {
-                  steps {
-                      sshagent(['ec2-ssh-key']) {
-                          sh '''
-                          ssh -o StrictHostKeyChecking=no ubuntu@ec2-18-222-99-213.us-east-2.compute.amazonaws.com << 'EOF'
+            steps {
+                sshagent(['ec2-ssh-key']) {
+                    sh '''#!/bin/bash
+        ssh -o StrictHostKeyChecking=no ubuntu@ec2-18-222-99-213.us-east-2.compute.amazonaws.com << 'EOF'
+        cd eventos-ingressos-backend
 
-                          cd eventos-ingressos-backend
+        echo "🛠 Atualizando código..."
+        git pull
 
-                          echo "🛠 Atualizando código..."
-                          git pull
+        echo "📦 Instalando dependências..."
+        npm install
 
-                          echo "📦 Instalando dependências..."
-                          npm install
+        echo "🚀 Reiniciando API com PM2..."
+        pm2 stop 0 || true
 
-                          echo "🚀 Reiniciando API com PM2..."
-                          pm2 stop 0 
+        echo "🏗 Buildando projeto..."
+        npm run build
 
-                          echo "🏗 Buildando projeto..."
-                          npm run build
+        echo "🚀 Reiniciando API com PM2..."
+        pm2 restart 0
 
-                          echo "🚀 Reiniciando API com PM2..."
-                          pm2 restart 0 
+        echo "✔ Deploy finalizado com sucesso!"
+        EOF
+        '''
+                }
+            }
+        }
 
-                          echo "✔ Deploy finalizado com sucesso!"
-                          EOF
-                          '''
-                      }
-                  }
-              }
     }
 }
