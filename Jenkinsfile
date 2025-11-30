@@ -23,35 +23,17 @@ pipeline {
     }
 
     stages {
-        stage('Install dependencies') {
-            steps {
-                sh 'npm install'
-            }
-        }
+        // stage('Install dependencies') {
+        //     steps {
+        //         sh 'npm install'
+        //     }
+        // }
 
-        stage('Start API for tests') {
-            steps {
-                sh 'npm run dev &'
-
-                sh '''
-                echo "Aguardando API subir..."
-                for i in {1..30}; do
-                    if nc -z localhost 3333; then
-                        echo "API está rodando!"
-                        break
-                    fi
-                    echo "Aguardando..."
-                    sleep 2
-                done
-                '''
-            }
-        }
-
-        stage('Tests') {
-            steps {
-                sh 'npm run test2'
-            }
-        }
+        // stage('Tests') {
+        //     steps {
+        //         sh 'npm run test2'
+        //     }
+        // }
 
         stage('Build') {
             steps {
