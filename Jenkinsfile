@@ -49,7 +49,7 @@ pipeline {
 
         stage('Tests') {
             steps {
-                sh 'npm test2'
+                sh 'npm run test2'
             }
         }
 
@@ -66,10 +66,34 @@ pipeline {
             }
         }
 
-        // stage('Notify Users') {
-        //     steps {
-        //         sh 'node dist/modules/users/services/sendEmail.js'
-        //     }
-        // }
+        stage('Deploy to EC2') {
+                  steps {
+                      sshagent(['ec2-ssh-key']) {
+                          sh '''
+                          ssh -o StrictHostKeyChecking=no ubuntu@ec2-18-222-99-213.us-east-2.compute.amazonaws.com << 'EOF'
+
+                          cd evenetos-ingressos-backend
+
+                          echo "🛠 Atualizando código..."
+                          git pull
+
+                          echo "📦 Instalando dependências..."
+                          npm install
+
+                          echo "🚀 Reiniciando API com PM2..."
+                          pm2 stop 0 
+
+                          echo "🏗 Buildando projeto..."
+                          npm run build
+
+                          echo "🚀 Reiniciando API com PM2..."
+                          pm2 restart 0 
+
+                          echo "✔ Deploy finalizado com sucesso!"
+                          EOF
+                          '''
+                      }
+                  }
+              }
     }
 }
