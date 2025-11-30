@@ -23,11 +23,11 @@ pipeline {
     }
 
     stages {
-        // stage('Install dependencies') {
-        //     steps {
-        //         sh 'npm install'
-        //     }
-        // }
+        stage('Install dependencies') {
+            steps {
+                sh 'npm install'
+            }
+        }
 
         // stage('Tests') {
         //     steps {
