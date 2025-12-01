@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "set NODE_ENV=test&&jest --runInBand",
+    "test2": "set NODE_ENV=test&&jest --runInBand --testMatch \"**/*Service.spec.ts\"",
     "dev": "ts-node-dev -r tsconfig-paths/register --inspect --transpile-only src/shared/server.ts",
     "doc": "ts-node-dev doc.config.ts",
     "build": "tsc --project tsconfig.json && tsc-alias",
