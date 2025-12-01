@@ -2,35 +2,36 @@ pipeline {
     agent any
 
     triggers {
-      githubPush()
+        githubPush()
     }
+
     environment {
         API_URL = 'http://localhost:3333'
-        EMAIL = 'luismendesdecarvalho35@gmail.com'
-        PASSWORD = 'bpzu odnm fqxn sioy'
-        RECIPIENT_EMAIL = 'pipelineteste11@gmail.com'
+
+        MYSQL_HOST = 'database'
+        MYSQL_PORT = '3306'
+        MYSQL_USER = 'admin'
+        MYSQL_PASSWORD = '123456'
         MYSQL_DATABASE = 'database_test'
-        MYSQL_ROOT_PASSWORD = '12345'
-        REDIS_HOST = 'localhost'
-        MYSQL_PASSWORD = '12345'
-        MYSQL_PORT = '3307'
-        MYSQL_USER = 'root'
-        MYSQL_HOST= 'localhost'
-        NODE_ENV = 'test'
-        PORT = '3333'
+
+        REDIS_HOST = 'redis'
         REDIS_PORT = '6379'
         REDIS_PASSWORD = '12345'
-        REDIS_PREFIX = 'api'
+
+        NODE_ENV = 'test'
+        PORT = '3333'
     }
 
     stages {
-        stage('Testes') {
+        stage('Install dependencies') {
             steps {
                 sh 'npm install'
-                
-                sh 'npm run dev &'
-                sh 'sleep 10'
-                sh 'npm test'
+            }
+        }
+
+        stage('Tests') {
+            steps {
+                sh 'npm run test2'
             }
         }
 
@@ -41,16 +42,39 @@ pipeline {
 
             post {
                 success {
-                    archiveArtifacts artifacts: 'dist/', fingerprint: true
-                    archiveArtifacts artifacts: 'coverage/lcov-report/index.html', fingerprint: true
+                    archiveArtifacts artifacts: 'dist/**', fingerprint: true
+                    archiveArtifacts artifacts: 'coverage/**', fingerprint: true
                 }
             }
         }
 
-        stage('Notificar usuários') {
-            steps {
-                sh 'node src/modules/users/services/sendEmail.ts'
-            }
+stage('Deploy to EC2') {
+    steps {
+        sshagent(['ec2-ssh-key']) {
+            sh '''#!/bin/bash
+ssh -o StrictHostKeyChecking=no ubuntu@ec2-18-222-99-213.us-east-2.compute.amazonaws.com << 'EOF'
+cd eventos-ingressos-backend
+echo "🛠 Atualizando código..."
+git pull
+
+echo "📦 Instalando dependências..."
+npm install
+
+echo "🚀 Parando API com PM2..."
+pm2 stop 0 || true
+
+echo "🏗 Buildando..."
+npm run build
+
+echo "🚀 Reiniciando API..."
+pm2 restart 0
+
+echo "✔ Deploy finalizado com sucesso!"
+EOF
+'''
         }
+    }
+}
+
     }
 }
